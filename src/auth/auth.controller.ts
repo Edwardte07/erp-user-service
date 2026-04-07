@@ -8,8 +8,9 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  async login(@Body() body: { email: string; password: string }) {
-    const data = await this.authService.login(body.email, body.password);
+  async login(@Body() body: { email?: string; userOrEmail?: string; password: string }) {
+    const emailOrUser = body.userOrEmail || body.email || '';
+    const data = await this.authService.login(emailOrUser, body.password);
     return { statusCode: 200, intOpCode: 0, data };
   }
 
