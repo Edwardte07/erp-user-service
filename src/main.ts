@@ -12,8 +12,9 @@ async function bootstrap() {
     errorHttpStatusCode: 400,
   }));
   app.enableCors();
-  await app.listen(3001);
-  console.log('User Service corriendo en http://localhost:3001');
+  const port = process.env['PORT'] || 3001;
+  await app.listen(port);
+  console.log(`User Service corriendo en puerto ${port}`);
 }
 bootstrap();
 
