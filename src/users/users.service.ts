@@ -6,7 +6,6 @@ import { supabase } from '../supabase.client';
 export class UsersService {
 
   private async formatUser(user: any) {
-    // Permisos globales
     let permisosGlobales: string[] = [];
     if (user.permisos_globales?.length) {
       const { data: perms } = await supabase
@@ -16,7 +15,6 @@ export class UsersService {
       permisosGlobales = perms?.map((p: any) => p.nombre) || [];
     }
 
-    // Permisos de grupo
     const { data: grupoPerm } = await supabase
       .from('grupo_usuario_permisos')
       .select('permiso_id, permisos(nombre)')
@@ -26,10 +24,8 @@ export class UsersService {
       ?.map((gp: any) => gp.permisos?.nombre)
       .filter(Boolean) || [];
 
-    // Combinar globales + grupo sin duplicados
     const permissions = [...new Set([...permisosGlobales, ...permisosGrupo])];
 
-    // Grupos del usuario
     const { data: grupos } = await supabase
       .from('grupo_miembros')
       .select('grupo_id')
@@ -122,12 +118,13 @@ export class UsersService {
 
   async update(id: string, body: any) {
     const updateData: any = {
-      username:     body.name,
-      email:        body.email,
-      rol:          body.role,
-      telefono:     body.phone     || null,
-      direccion:    body.address   || null,
-      fecha_inicio: body.birthdate || null,
+      username:        body.name,
+      email:           body.email,
+      rol:             body.role,
+      telefono:        body.phone        || null,
+      direccion:       body.address      || null,
+      fecha_inicio:    body.birthdate    || null,
+      nombre_completo: body.fullName     || null,
     };
     if (body.password) {
       updateData.password_hash = await bcrypt.hash(body.password, 10);
@@ -150,10 +147,16 @@ export class UsersService {
     let ids: string[] = [];
 
     if (permissions.length) {
-      const { data: perms, error } = await supabase
-        .from('permisos').select('id, nombre').in('nombre', permissions);
-      if (error) throw error;
-      ids = perms?.map((p: any) => p.id) || [];
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(permissions[0]);
+
+      if (isUuid) {
+        ids = permissions;
+      } else {
+        const { data: perms, error } = await supabase
+          .from('permisos').select('id, nombre').in('nombre', permissions);
+        if (error) throw error;
+        ids = perms?.map((p: any) => p.id) || [];
+      }
     }
 
     const { error } = await supabase
